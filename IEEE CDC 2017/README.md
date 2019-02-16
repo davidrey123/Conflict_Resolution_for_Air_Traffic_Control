@@ -1,0 +1,1 @@
+This repository contains all AMPL models and instances used in the paper titled "Complex Number Formulation and Convex Relaxations for Aircraft Conflict Resolution" presented at the IEEE Control and Decision Conference 2017 in Melbourne, Australia, by David Rey and Hassan Hijazi, doi: 10.1109/CDC.2017.8263648
