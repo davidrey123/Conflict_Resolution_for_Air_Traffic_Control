@@ -1,0 +1,363 @@
+reset;
+
+model Complex_CR_norot.mod;
+
+option presolve 1;
+option show_stats 1;
+option reset_initial_guesses 0;
+
+problem MIQP_Complex_CR: Dev,dx,dy,vrx,vry,z,bin11,bin12,
+					bin311,bin312,bin321,bin322,bin331,bin332,bin341,bin342,					
+					uarg,larg,cvrx,cvry;
+option solver cplexamp;
+option cplex_options "mipdisplay=2 mipgap=1e-4 return_mipgap=1 threads=6 bestbound timelimit=300";
+
+problem MIQCP_Complex_CR: Dev,dx,dy,tdx,tdy,vrx,vry,z,bin11,bin12,
+					bin311,bin312,bin321,bin322,bin331,bin332,bin341,bin342,					
+					uarg,larg,cvrx,cvry,umod,rlmod,tdxub,tdyub;
+option solver cplexamp;
+option cplex_options "mipdisplay=2 mipgap=1e-4 return_mipgap=1 threads=6 bestbound timelimit=300";
+
+problem NLP_Complex_CR: Dev,dx,dy,vrx,vry,fbin11,fbin12,
+					fbin311,fbin312,fbin321,fbin322,fbin331,fbin332,fbin341,fbin342,					
+					uarg,larg,cvrx,cvry,umod,lmod;
+option solver ipopt;
+option ipopt_options "constr_viol_tol=1e-9";
+
+suffix bestbound OUT;
+suffix relmipgap OUT;
+
+display qmin,qmax,hmin,hmax;
+for{nb in 4..20}{
+	reset data;
+	data ("..\Instances\CP_" & nb & ".dat");		
+		
+	printf "CP_%d\n",nb;
+		
+	let A := 1..n;
+
+	let nc := 0;
+	for{i in A, j in A : i<j}{
+		if tm0[i,j] >= eps and sep0[i,j] <= -eps then let nc := nc + 1;
+	}
+	display sep0,nc;
+	
+	for{(i,j) in P}{
+		if xr0[i,j]>=0 and yr0[i,j]>=0 then {
+			let Mbin1[i,j] := -yr0[i,j]*lvrx[i,j]+xr0[i,j]*uvrx[i,j];
+			if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin332[i,j] := 2*a[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin332[i,j] := 2*a[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+			if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin332[i,j] := 2*a[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin332[i,j] := 2*a[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin331[i,j] := 2*b[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin331[i,j] := 2*b[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));	
+			if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin331[i,j] := 2*b[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin331[i,j] := 2*b[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+		}
+		if xr0[i,j]>=0 and yr0[i,j]< 0 then {
+			let Mbin1[i,j] := -yr0[i,j]*uvrx[i,j]+xr0[i,j]*uvrx[i,j];
+			if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin311[i,j] := 2*a[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin311[i,j] := 2*a[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));				
+			if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin311[i,j] := 2*a[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin311[i,j] := 2*a[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin312[i,j] := -2*b[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin312[i,j] := -2*b[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));	
+			if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin312[i,j] := -2*b[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin312[i,j] := -2*b[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+		}
+		if xr0[i,j]< 0 and yr0[i,j]>=0 then {
+			let Mbin1[i,j] := -yr0[i,j]*lvrx[i,j]+xr0[i,j]*lvrx[i,j];
+			if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin321[i,j] := -2*a[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin321[i,j] := -2*a[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+			if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin321[i,j] := -2*a[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin321[i,j] := -2*a[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin322[i,j] := 2*b[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin322[i,j] := 2*b[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));			
+			if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin322[i,j] := 2*b[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin322[i,j] := 2*b[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));				
+		}
+		if xr0[i,j]< 0 and yr0[i,j]< 0 then {
+			let Mbin1[i,j] := -yr0[i,j]*uvrx[i,j]+xr0[i,j]*lvrx[i,j];
+			if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin342[i,j] := -2*a[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin342[i,j] := -2*a[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin342[i,j] := -2*a[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin342[i,j] := -2*a[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin341[i,j] := -2*b[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin341[i,j] := -2*b[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+			if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin341[i,j] := -2*b[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin341[i,j] := -2*b[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+		}
+	}
+
+	problem MIQP_Complex_CR;
+	solve MIQP_Complex_CR;	
+	
+	if solve_result = "infeasible" then {
+		display "PROBLEM MIQP_Complex_CR INFEASIBLE";
+		let LB_stat := "infeasible";
+	}
+	else {
+		let LB_stat := "feasible";
+		let LB := Dev;
+		let LB_time := _solve_elapsed_time;
+		let LB_gap := 100*Dev.relmipgap;
+		let LB_BB := Dev.bestbound;	
+		if solve_result = 'limit' then {
+			let LB_feas := "local";
+		}
+		else{
+			let LB_feas := "global";
+		}
+		let nb_violations := 0;
+		for{i in A}{
+			let qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+			let hopt[i] := atan2(dy[i],dx[i]);
+			if qopt[i] <= qmin - eps or qopt[i] >= qmax + eps then {
+				display "violation",i,qopt[i];
+				let LB_feas := "violation";
+				let nb_violations := nb_violations + 1;
+			}
+		}
+		display solve_result,_solve_elapsed_time,LB_feas,nb_violations,LB_BB;
+		display Dev,dx,dy,qopt,hopt,z,vrx,vry;
+		
+		if LB_feas = "violation" then{
+
+			problem MIQCP_Complex_CR;
+			solve MIQCP_Complex_CR;
+			
+			if solve_result = "infeasible" then{
+				display "PROBLEM MIQCP_Complex_CR INFEASIBLE";
+				let LB2_stat := "infeasible";
+			} 
+			else {
+				let LB2_stat := "feasible";
+				let LB2 := Dev;
+				let LB2_time := _solve_elapsed_time;
+				let LB2_gap := 100*Dev.relmipgap;
+				let LB2_BB := Dev.bestbound;
+				if solve_result = 'limit' then {
+					let LB2_feas := "local";
+				}
+				else{
+					let LB2_feas := "global";
+				}
+				let nb_violations2 := 0;
+				for{i in A}{
+					let qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+					let hopt[i] := atan2(dy[i],dx[i]);
+					if qopt[i] <= qmin - eps or qopt[i] >= qmax + eps then {
+						display "violation",i,qopt[i];
+						let LB2_feas := "violation";
+						let nb_violations2 := nb_violations2 + 1;
+					}
+					if tdx[i] >= dx[i]**2 + eps or tdy[i] >= dy[i]**2 + eps then display "aux var violation",i,tdx[i],tdy[i],dx[i],dy[i];
+				}
+				display solve_result,_solve_elapsed_time,nb_violations2,LB2_BB;
+				display Dev,dx,dy,qopt,hopt,tdx,tdy,vrx,vry,z;
+			
+				if LB2_feas = "violation" then{
+					let{(i,j) in P} zopt[i,j] := round(z[i,j]);
+
+					problem NLP_Complex_CR;
+					solve NLP_Complex_CR;
+					
+					display solve_message,solve_result,_solve_elapsed_time;
+					
+					if solve_result = "infeasible" then{
+						display "PROBLEM NLP_Complex_CR INFEASIBLE";
+						let UB_stat := "infeasible";
+					} 
+					else {
+						let UB_stat := "feasible";
+						let UB := Dev;
+						let UB_time := _solve_elapsed_time;
+						if UB == 0 then{
+							let UB_gap := 0;
+						}
+						else{
+							let UB_gap := 100*(UB-max(LB_BB,LB2_BB))/UB;
+						}
+						let{i in A} qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+						let{i in A} hopt[i] := atan2(dy[i],dx[i]);		
+						display Dev,dx,dy,qopt,hopt,UB,UB_time,UB_gap;				
+					}		
+				}
+			}
+		}
+	}
+	if LB_stat = "infeasible" or LB2_stat = "infeasible" then {
+		printf '%d\t%d\t infeasible instance!\n',nb,nc > Complex_CR_norot.out;
+	}
+	else{
+		printf '%d\t%d\t%.6f\t%.3f\t%.3f\t%s\t%d\t%.6f\t%.3f\t%.3f\t%s\t%d\t%.6f\t%.3f\t%.3f\t%s\n',nb,nc,LB,LB_time,LB_gap,LB_feas,nb_violations,LB2,LB2_time,LB2_gap,LB2_feas,nb_violations2,UB,UB_time,UB_gap,UB_stat > Complex_CR_norot.out;	
+	}
+}
+
+for{nb in 1..4}{
+	for{id in 1..100}{
+		reset data;
+		data ("..\Instances\RCP_" & nb*10 & "_" & id & ".dat");		
+		
+		printf "RCP_%d_%d\n",nb*10,id;		
+		
+		let A := 1..n;
+		
+		let nc := 0;
+		for{i in A, j in A : i<j}{
+			if tm0[i,j] >= eps and sep0[i,j] <= -eps then let nc := nc + 1;
+		}	
+		
+		for{(i,j) in P}{
+			if xr0[i,j]>=0 and yr0[i,j]>=0 then {
+				let Mbin1[i,j] := -yr0[i,j]*lvrx[i,j]+xr0[i,j]*uvrx[i,j];
+				if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin332[i,j] := 2*a[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin332[i,j] := 2*a[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+				if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin332[i,j] := 2*a[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin332[i,j] := 2*a[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin331[i,j] := 2*b[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin331[i,j] := 2*b[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));	
+				if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin331[i,j] := 2*b[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin331[i,j] := 2*b[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+			}
+			if xr0[i,j]>=0 and yr0[i,j]< 0 then {
+				let Mbin1[i,j] := -yr0[i,j]*uvrx[i,j]+xr0[i,j]*uvrx[i,j];
+				if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin311[i,j] := 2*a[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if a[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin311[i,j] := 2*a[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));				
+				if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin311[i,j] := 2*a[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if a[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin311[i,j] := 2*a[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin312[i,j] := -2*b[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin312[i,j] := -2*b[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));	
+				if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin312[i,j] := -2*b[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin312[i,j] := -2*b[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+			}
+			if xr0[i,j]< 0 and yr0[i,j]>=0 then {
+				let Mbin1[i,j] := -yr0[i,j]*lvrx[i,j]+xr0[i,j]*lvrx[i,j];
+				if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin321[i,j] := -2*a[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin321[i,j] := -2*a[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+				if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin321[i,j] := -2*a[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin321[i,j] := -2*a[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin322[i,j] := 2*b[i,j]*uvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]>=0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin322[i,j] := 2*b[i,j]*uvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));			
+				if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin322[i,j] := 2*b[i,j]*lvrx[i,j] - uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if b[i,j]< 0 and -(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin322[i,j] := 2*b[i,j]*lvrx[i,j] - lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));				
+			}
+			if xr0[i,j]< 0 and yr0[i,j]< 0 then {
+				let Mbin1[i,j] := -yr0[i,j]*uvrx[i,j]+xr0[i,j]*lvrx[i,j];
+				if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin342[i,j] := -2*a[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -a[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin342[i,j] := -2*a[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin342[i,j] := -2*a[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -a[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin342[i,j] := -2*a[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin341[i,j] := -2*b[i,j]*uvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]>=0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin341[i,j] := -2*b[i,j]*uvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+				if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))>=0 then let Mbin341[i,j] := -2*b[i,j]*lvrx[i,j] + uvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));
+				if -b[i,j]< 0 and (c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]))< 0 then let Mbin341[i,j] := -2*b[i,j]*lvrx[i,j] + lvry[i,j]*(c[i,j] - sqrt(c[i,j]**2 - 4*a[i,j]*b[i,j]));		
+			}
+		}	
+		
+		problem MIQP_Complex_CR;
+		solve MIQP_Complex_CR;	
+		
+		if solve_result = "infeasible" then {
+			display "PROBLEM MIQP_Complex_CR INFEASIBLE";
+			let LB_stat := "infeasible";
+		}
+		else {
+			let LB_stat := "feasible";
+			let LB := Dev;
+			let LB_time := _solve_elapsed_time;
+			let LB_gap := 100*Dev.relmipgap;
+			let LB_BB := Dev.bestbound;
+			if solve_result = 'limit' then {
+				let LB_feas := "local";
+			}
+			else{
+				let LB_feas := "global";
+			}
+			let nb_violations := 0;
+			for{i in A}{
+				let qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+				let hopt[i] := atan2(dy[i],dx[i]);
+				if qopt[i] <= qmin - eps or qopt[i] >= qmax + eps then {
+					display "violation",i,qopt[i];
+					let LB_feas := "violation";
+					let nb_violations := nb_violations + 1;
+				}
+			}
+			display solve_result,_solve_elapsed_time,LB_feas,nb_violations,LB_BB;
+			display Dev,dx,dy,qopt,hopt,z,vrx,vry;
+			
+			if LB_feas = "violation" then{
+
+				problem MIQCP_Complex_CR;
+				solve MIQCP_Complex_CR;
+				
+				if solve_result = "infeasible" then{
+					display "PROBLEM MIQCP_Complex_CR INFEASIBLE";
+					let LB2_stat := "infeasible";
+				} 
+				else {
+					let LB2_stat := "feasible";
+					let LB2 := Dev;
+					let LB2_time := _solve_elapsed_time;
+					let LB2_gap := 100*Dev.relmipgap;
+					let LB2_BB := Dev.bestbound;
+					if solve_result = 'limit' then {
+						let LB2_feas := "local";
+					}
+					else{
+						let LB2_feas := "global";
+					}
+					let nb_violations2 := 0;
+					for{i in A}{
+						let qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+						let hopt[i] := atan2(dy[i],dx[i]);
+						if qopt[i] <= qmin - eps or qopt[i] >= qmax + eps then {
+							display "violation",i,qopt[i];
+							let LB2_feas := "violation";
+							let nb_violations2 := nb_violations2 + 1;
+						}
+						if tdx[i] >= dx[i]**2 + eps or tdy[i] >= dy[i]**2 + eps then display "aux var violation",i,tdx[i],tdy[i],dx[i],dy[i];
+					}
+					display solve_result,_solve_elapsed_time,nb_violations2,LB2_BB;
+					display Dev,dx,dy,qopt,hopt,tdx,tdy,vrx,vry,z;
+				}		
+				if LB2_feas = "violation" then{
+					let{(i,j) in P} zopt[i,j] := round(z[i,j]);
+
+					problem NLP_Complex_CR;
+					solve NLP_Complex_CR;
+					
+					display solve_message,solve_result,_solve_elapsed_time;
+					
+					if solve_result = "infeasible" then{
+						display "PROBLEM NLP_Complex_CR INFEASIBLE";
+						let UB_stat := "infeasible";
+					} 
+					else {
+						let UB_stat := "feasible";
+						let UB := Dev;
+						let UB_time := _solve_elapsed_time;
+						if UB == 0 then{
+							let UB_gap := 0;
+						}
+						else{
+							let UB_gap := 100*(UB-max(LB_BB,LB2_BB))/UB;
+						}
+						let{i in A} qopt[i] := sqrt(dx[i]**2 + dy[i]**2);
+						let{i in A} hopt[i] := atan2(dy[i],dx[i]);		
+						display Dev,dx,dy,qopt,hopt,UB,UB_time,UB_gap;				
+					}		
+				}
+			}		
+		}
+		if LB_stat = "infeasible" or LB2_stat = "infeasible" then {
+			printf '%d\t%d\t infeasible instance!\n',nb,nc > Complex_CR_norot.out;
+		}
+		else{
+			printf '%d\t%d\t%d\t%.6f\t%.3f\t%.3f\t%s\t%d\t%.6f\t%.3f\t%.3f\t%s\t%d\t%.6f\t%.3f\t%.3f\t%s\n',nb*10,id,nc,LB,LB_time,LB_gap,LB_feas,nb_violations,LB2,LB2_time,LB2_gap,LB2_feas,nb_violations2,UB,UB_time,UB_gap,UB_stat > Complex_CR_norot.out;	
+		}		
+	}
+}
+display _total_solve_elapsed_time;
+
