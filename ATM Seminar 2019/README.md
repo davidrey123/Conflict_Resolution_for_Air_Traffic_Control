@@ -1,1 +1,0 @@
-This repository contains all AMPL model files and instances used in the paper titled "Scalable Global Optimization Approach for Aircraft Conflict Resolution by Speed Control" by Fernando Hugo Cunha Dias and David Rey
