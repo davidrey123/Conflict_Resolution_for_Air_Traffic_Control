@@ -1,6 +1,6 @@
 reset;
 
-model Complex_CR_norot.mod;
+model Complex_Number_Formulation.mod;
 
 option presolve 1;
 option show_stats 1;
